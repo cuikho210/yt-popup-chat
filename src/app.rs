@@ -116,7 +116,9 @@ impl App {
 
         scrollable(column(messages_elements))
             .id(self.scrollable_id.clone())
-            .direction(Direction::Vertical(Scrollbar::new()))
+            .direction(Direction::Vertical(
+                Scrollbar::new().width(0).scroller_width(3),
+            ))
             .into()
     }
 }

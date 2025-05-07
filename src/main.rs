@@ -11,7 +11,6 @@ pub fn main() -> iced::Result {
         .init();
 
     iced::application("Popup Chat", App::update, App::view)
-        .centered()
         .decorations(false)
         .transparent(true)
         .window_size(Size {
@@ -19,7 +18,7 @@ pub fn main() -> iced::Result {
             height: 400.,
         })
         .style(|_state, _theme| Appearance {
-            background_color: iced::Color::from_linear_rgba(0., 0., 0., 0.3),
+            background_color: iced::Color::from_linear_rgba(0., 0., 0., 0.25),
             text_color: iced::Color::WHITE,
         })
         .default_font(Font::with_name("Noto Sans"))
