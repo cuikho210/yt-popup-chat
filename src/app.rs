@@ -56,7 +56,13 @@ impl App {
                 Task::future(async move {
                     let chats = {
                         let mut guard = client.lock().await;
-                        guard.fetch().await.expect("Cannot fetch new chat")
+                        match guard.fetch().await {
+                            Ok(chats) => chats,
+                            Err(err) => {
+                                tracing::error!("{err}");
+                                return AppMessage::Tick;
+                            }
+                        }
                     };
 
                     let chats: Vec<ChatMessage> = chats
@@ -82,11 +88,17 @@ impl App {
                         .collect();
 
                     if !chats.is_empty() {
-                        let mut guard = messages_arc.write().expect("Failed to acquire write lock");
-                        guard.extend(chats);
-                        if guard.len() > 50 {
-                            let overflow = guard.len() - 50;
-                            guard.drain(0..overflow);
+                        match messages_arc.write() {
+                            Ok(mut guard) => {
+                                guard.extend(chats);
+                                if guard.len() > 50 {
+                                    let overflow = guard.len() - 50;
+                                    guard.drain(0..overflow);
+                                }
+                            }
+                            Err(err) => {
+                                tracing::error!("{err}");
+                            }
                         }
                     }
 
