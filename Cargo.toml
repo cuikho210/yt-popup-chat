@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-iced = "0.13.1"
+anyhow = "1.0.98"
+chrono = { version = "0.4.41", features = ["serde"] }
+iced = { version = "0.13.1", features = ["tokio"] }
+serde = { version = "1.0.219", features = ["derive"] }
+tokio = { version = "1.45.0" }
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
+youtube_chat = { git = "https://github.com/mtlkms/youtube_chat_rs" }
