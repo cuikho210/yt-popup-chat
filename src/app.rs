@@ -1,7 +1,8 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use iced::widget::scrollable::{Direction, Id, Scrollbar};
 use iced::widget::text::Shaping;
-use iced::widget::{column, row, text};
+use iced::widget::{column, row, scrollable, text};
 use iced::{Element, Task};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
@@ -26,6 +27,7 @@ pub enum AppMessage {
 pub struct App {
     messages: Arc<RwLock<Vec<ChatMessage>>>,
     client: Arc<Mutex<LiveChatClient<Empty, Empty, Empty, Empty>>>,
+    scrollable_id: Id,
 }
 impl App {
     pub async fn try_new(url: impl AsRef<str>) -> Result<Self> {
@@ -35,50 +37,60 @@ impl App {
             client.start().await?;
             client
         }));
+        let scrollable_id = Id::unique();
 
-        Ok(Self { messages, client })
+        Ok(Self {
+            messages,
+            client,
+            scrollable_id,
+        })
     }
 
     pub fn update(&mut self, msg: AppMessage) -> Task<AppMessage> {
         let client = self.client.clone();
-        let messages = self.messages.clone();
+        let messages_arc = self.messages.clone();
+        let scrollable_id = self.scrollable_id.clone();
+
         match msg {
-            AppMessage::Tick => Task::future(async move {
-                let chats = {
-                    let mut guard = client.lock().await;
-                    guard.fetch().await.expect("Cannot fetch new chat")
-                };
+            AppMessage::Tick => Task::batch(vec![
+                Task::future(async move {
+                    let chats = {
+                        let mut guard = client.lock().await;
+                        guard.fetch().await.expect("Cannot fetch new chat")
+                    };
 
-                let chats: Vec<ChatMessage> = chats
-                    .into_iter()
-                    .map(|chat| {
-                        let parts: Vec<String> = chat
-                            .message
-                            .into_iter()
-                            .map(|v| match v {
-                                MessageItem::Emoji(emoji) => {
-                                    emoji.emoji_text.unwrap_or(String::new())
-                                }
-                                MessageItem::Text(text) => text,
-                            })
-                            .collect();
-                        ChatMessage {
-                            id: chat.id,
-                            author: chat.author.name.unwrap_or("Unknow".to_string()),
-                            message: parts.join(" "),
-                            timestamp: chat.timestamp,
-                        }
-                    })
-                    .collect();
+                    let chats: Vec<ChatMessage> = chats
+                        .into_iter()
+                        .map(|chat| {
+                            let parts: Vec<String> = chat
+                                .message
+                                .into_iter()
+                                .map(|v| match v {
+                                    MessageItem::Emoji(emoji) => {
+                                        emoji.emoji_text.unwrap_or(String::new())
+                                    }
+                                    MessageItem::Text(text) => text,
+                                })
+                                .collect();
+                            ChatMessage {
+                                id: chat.id,
+                                author: chat.author.name.unwrap_or("Unknow".to_string()),
+                                message: parts.join(" "),
+                                timestamp: chat.timestamp,
+                            }
+                        })
+                        .collect();
 
-                {
-                    let mut guard = messages.write().expect("Failed to acquire write lock");
-                    guard.extend(chats);
-                }
+                    if !chats.is_empty() {
+                        let mut guard = messages_arc.write().expect("Failed to acquire write lock");
+                        guard.extend(chats);
+                    }
 
-                tokio::time::sleep(Duration::from_millis(500)).await;
-                AppMessage::Tick
-            }),
+                    tokio::time::sleep(Duration::from_millis(500)).await;
+                    AppMessage::Tick
+                }),
+                scrollable::snap_to(scrollable_id, scrollable::RelativeOffset::END),
+            ]),
         }
     }
 
@@ -102,6 +114,9 @@ impl App {
             Vec::new()
         };
 
-        column(messages_elements).into()
+        scrollable(column(messages_elements))
+            .id(self.scrollable_id.clone())
+            .direction(Direction::Vertical(Scrollbar::new()))
+            .into()
     }
 }
