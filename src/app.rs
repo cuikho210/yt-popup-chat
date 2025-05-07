@@ -84,6 +84,10 @@ impl App {
                     if !chats.is_empty() {
                         let mut guard = messages_arc.write().expect("Failed to acquire write lock");
                         guard.extend(chats);
+                        if guard.len() > 50 {
+                            let overflow = guard.len() - 50;
+                            guard.drain(0..overflow);
+                        }
                     }
 
                     tokio::time::sleep(Duration::from_millis(500)).await;
