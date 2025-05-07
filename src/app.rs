@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use iced::widget::scrollable::{Direction, Id, Scrollbar};
 use iced::widget::text::Shaping;
 use iced::widget::{column, row, scrollable, text};
-use iced::{Element, Task};
+use iced::{Color, Element, Task};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -100,12 +100,15 @@ impl App {
                 .iter()
                 .map(|msg| {
                     row![
-                        text(format!("[{}]", msg.author)).size(13),
+                        text(format!("[{}]", msg.author))
+                            .size(13)
+                            .color(Color::from_rgb8(255, 144, 127))
+                            .shaping(Shaping::Advanced),
                         text(msg.message.clone())
                             .size(13)
                             .shaping(Shaping::Advanced),
                     ]
-                    .spacing(16)
+                    .spacing(8)
                     .into()
                 })
                 .collect()
