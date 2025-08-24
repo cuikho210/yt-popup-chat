@@ -1,9 +1,9 @@
 use anyhow::Result;
 use chrono::{DateTime, Utc};
+use iced::Length::Fill;
 use iced::widget::scrollable::{Direction, Id, Scrollbar};
-use iced::widget::text::Shaping;
-use iced::widget::{column, row, scrollable, text};
-use iced::{Color, Element, Task};
+use iced::widget::{column, rich_text, scrollable, span};
+use iced::{Element, Task, color};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -110,21 +110,17 @@ impl App {
         }
     }
 
-    pub fn view(&self) -> Element<AppMessage> {
+    pub fn view(&'_ self) -> Element<'_, AppMessage> {
         let messages_elements: Vec<Element<_>> = if let Ok(messages) = self.messages.read() {
             messages
                 .iter()
                 .map(|msg| {
-                    row![
-                        text(format!("[{}]", msg.author))
-                            .size(13)
-                            .color(Color::from_rgb8(255, 144, 127))
-                            .shaping(Shaping::Advanced),
-                        text(msg.message.clone())
-                            .size(13)
-                            .shaping(Shaping::Advanced),
+                    rich_text![
+                        span(format!("[{}]", msg.author)).color(color!(0xff907f)),
+                        " ",
+                        span(msg.message.clone()),
                     ]
-                    .spacing(8)
+                    .size(13)
                     .into()
                 })
                 .collect()
@@ -135,8 +131,11 @@ impl App {
 
         scrollable(column(messages_elements))
             .id(self.scrollable_id.clone())
+            .width(Fill)
+            .height(Fill)
+            .spacing(10)
             .direction(Direction::Vertical(
-                Scrollbar::new().width(0).scroller_width(3),
+                Scrollbar::new().width(0).scroller_width(0),
             ))
             .into()
     }
